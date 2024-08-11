@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image } from 'react-native';
+import { Audio } from 'expo-av';
 import axios from 'axios';
+import { useNavigation } from '@react-navigation/native';
 
 interface User {
   id: string;
@@ -20,8 +22,12 @@ const UserProfile = () => {
   const [bonusCard, setBonusCard] = useState<BonusCard | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isRecording, setIsRecording] = useState(false);
+  const [transcription, setTranscription] = useState<string>('');
+  const [recording, setRecording] = useState<Audio.Recording | null>(null);
 
   const userId = '67f08475-9086-4848-9b86-a248933477da';
+  const navigation = useNavigation();
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -46,6 +52,71 @@ const UserProfile = () => {
     fetchUserData();
   }, [userId]);
 
+  const startRecording = async () => {
+    try {
+      const { status } = await Audio.requestPermissionsAsync();
+      if (status !== 'granted') {
+        alert('Permission to access microphone is required!');  
+        return;
+      }
+
+      await Audio.setAudioModeAsync({
+        allowsRecordingIOS: true,
+        playsInSilentModeIOS: true,
+      });
+
+      const { recording } = await Audio.Recording.createAsync(
+        Audio.RECORDING_OPTIONS_PRESET_HIGH_QUALITY
+      );
+      setRecording(recording);
+      setIsRecording(true);
+    } catch (error) {
+      console.error('Failed to start recording:', error);
+    }
+  };
+
+  const stopRecording = async () => {
+    if (recording) {
+      await recording.stopAndUnloadAsync();
+      const uri = recording.getURI();
+      setRecording(null);
+      setIsRecording(false);
+
+      if (uri) {
+        await uploadAudio(uri);
+      }
+    }
+  };
+
+  const uploadAudio = async (uri: string) => {
+    const formData = new FormData();
+    formData.append('file', {
+      uri,
+      type: 'audio/wav',
+      name: 'recording.wav',
+    });
+  
+    try {
+      console.log('Uploading audio file:', formData); // Log the formData for debugging
+      const response = await axios.post('http://10.2.0.152:8000/transcribe-audio', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      console.log('Response from server:', response.data); // Log the server response
+  
+      const { data } = response;
+      if (data.redirect) {
+        const screenName = data.redirect.replace('.tsx', ''); // Remove .tsx if present
+        navigation.navigate(screenName);
+      } else {
+        setTranscription(data.transcript);
+      }
+    } catch (error) {
+      console.error('Error uploading audio:', error.response ? error.response.data : error.message);
+    }
+  };
+  
   if (loading) return <Text>Loading...</Text>;
   if (error) return <Text>{error}</Text>;
   if (!user || !bonusCard) return <Text>No user or bonus card found</Text>;
@@ -70,7 +141,7 @@ const UserProfile = () => {
       </View>
 
       <View style={styles.cardTop}>
-        <Text style={styles.cardTitle}>Карта для получения выплат</Text>
+        <Text style={styles.cardTitle}>Зарплатная карта</Text>
         <View style={styles.cardNumberContainer}>
           <Text style={styles.cardNumber}>{bonusCard.cardNumber}</Text>
         </View>
@@ -78,7 +149,7 @@ const UserProfile = () => {
       <View style={styles.cardBottom}>
         <View>
           <Text style={styles.balance}>{bonusCard.balance} ₽</Text>
-          <Text style={styles.frozenBalance}>и {bonusCard.frozenBalance} ₽ в заморозке</Text>
+          <Text style={styles.frozenBalance}>и {bonusCard.frozenBalance} ₽ авансом</Text>
         </View>
         <View style={styles.actionsContainer}>
           <TouchableOpacity style={styles.actionButton}>
@@ -87,11 +158,11 @@ const UserProfile = () => {
           </TouchableOpacity>
           <TouchableOpacity style={styles.actionButton}>
             <Image source={require('../../../assets copy/recharge.png')} style={styles.actionIcon} />
-            <Text style={styles.actionText}>Пополнить баланс</Text>
+            <Text style={styles.actionText}>Вывести деньги</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.actionButton}>
             <Image source={require('../../../assets copy/edit.png')} style={styles.actionIcon} />
-            <Text style={styles.actionText}>Изменить карту</Text>
+            <Text style={styles.actionText}>Изменить данные</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -107,11 +178,25 @@ const UserProfile = () => {
           <Text style={styles.menuText}>Инструкции</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.menuItem}>
-          <Text style={styles.menuText}>Потратить баллы</Text>
+          <Text style={styles.menuText}>Частые вопросы</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.menuItem}>
           <Text style={styles.menuText}>О сервисе</Text>
         </TouchableOpacity>
+      </View>
+
+      <Text style={styles.menuText2}>Голосовой помощник - путеводитель:</Text>
+      <View style={styles.voiceButtonContainer}>
+        <TouchableOpacity
+          style={[styles.voiceButton, isRecording ? styles.listening : styles.notListening]}
+          onPress={isRecording ? stopRecording : startRecording}
+        >
+          
+          <Text style={styles.voiceButtonText}>
+            {isRecording ? 'Остановить запись' : 'Начать запись'}
+          </Text>
+        </TouchableOpacity>
+        <Text>Транскрипция: {transcription}</Text>
       </View>
     </ScrollView>
   );
@@ -121,12 +206,12 @@ const styles = StyleSheet.create({
   cardContainer: {
     borderRadius: 15,
     overflow: 'hidden',
-    backgroundColor: '#59A9CC',
+    backgroundColor: '#6a1b9a', // Фиолетовый цвет
     margin: 10,
     padding: 20,
   },
   cardTop: {
-    backgroundColor: '#58A6C8',
+    backgroundColor: '#8e24aa', // Фиолетовый цвет
     padding: 20,
     borderTopLeftRadius: 15,
     borderTopRightRadius: 15,
@@ -139,7 +224,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   cardNumberContainer: {
-    backgroundColor: '#fff',
+    backgroundColor: '#f3e5f5', // Фиолетовый цвет
     paddingVertical: 10,
     paddingHorizontal: 20,
     borderRadius: 10,
@@ -148,7 +233,7 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   cardNumber: {
-    color: '#000',
+    color: '#6a1b9a', // Фиолетовый цвет
     fontSize: 18,
     fontWeight: 'bold',
   },
@@ -157,7 +242,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderBottomLeftRadius: 15,
     borderBottomRightRadius: 15,
-    backgroundColor: '#58A6C8',
+    backgroundColor: '#8e24aa', // Фиолетовый цвет
     marginBottom: 10,
   },
   balance: {
@@ -167,7 +252,7 @@ const styles = StyleSheet.create({
     marginBottom: 5,
   },
   frozenBalance: {
-    color: '#fff',
+    color: '#f3e5f5', // Фиолетовый цвет
     fontSize: 16,
     marginBottom: 20,
   },
@@ -194,7 +279,8 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 20,
-    backgroundColor: '#f9f9f9',
+    backgroundColor: 'white', // Фиолетовый цвет
+    
   },
   profileHeader: {
     flexDirection: 'row',
@@ -211,10 +297,11 @@ const styles = StyleSheet.create({
   userName: {
     fontSize: 18,
     fontWeight: 'bold',
+    color: '#6a1b9a', // Фиолетовый цвет
   },
   userPhone: {
     fontSize: 14,
-    color: '#888',
+    color: '#6a1b9a', // Фиолетовый цвет
   },
   levelContainer: {
     marginBottom: 20,
@@ -223,11 +310,12 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
     marginBottom: 5,
+    color: '#6a1b9a', // Фиолетовый цвет
   },
   progressBar: {
     height: 10,
     borderRadius: 5,
-    backgroundColor: '#e0e0e0',
+    backgroundColor: '#e1bee7', // Фиолетовый цвет
     position: 'relative',
     justifyContent: 'center',
   },
@@ -235,7 +323,7 @@ const styles = StyleSheet.create({
     width: '85%',
     height: '100%',
     borderRadius: 5,
-    backgroundColor: '#59A9CC',
+    backgroundColor: '#6a1b9a', // Фиолетовый цвет
   },
   progressText: {
     position: 'absolute',
@@ -245,7 +333,7 @@ const styles = StyleSheet.create({
   },
   balanceContainer: {
     padding: 15,
-    backgroundColor: '#fff',
+    backgroundColor: '#f3e5f5', // Фиолетовый цвет
     borderRadius: 10,
     marginBottom: 20,
     shadowColor: '#000',
@@ -258,10 +346,11 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: 'bold',
     marginBottom: 5,
+    color: '#6a1b9a', // Фиолетовый цвет
   },
   frozenText: {
     fontSize: 14,
-    color: '#888',
+    color: '#6a1b9a', // Фиолетовый цвет
     marginBottom: 10,
   },
   balanceActions: {
@@ -270,7 +359,7 @@ const styles = StyleSheet.create({
   },
   menu: {
     padding: 15,
-    backgroundColor: '#fff',
+    backgroundColor: '#f3e5f5', // Фиолетовый цвет
     borderRadius: 10,
     marginBottom: 20,
     shadowColor: '#000',
@@ -281,17 +370,43 @@ const styles = StyleSheet.create({
   },
   menuItem: {
     paddingVertical: 15,
-    borderBottomColor: '#e0e0e0',
+    borderBottomColor: '#e1bee7', // Фиолетовый цвет
     borderBottomWidth: 1,
   },
   menuText: {
     fontSize: 16,
     fontWeight: 'bold',
+    color: '#6a1b9a', // Фиолетовый цвет
+  },
+  menuText2: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#6a1b9a', // Фиолетовый цвет
   },
   userEmail: {
     fontSize: 14,
-    color: '#888',
+    color: '#6a1b9a', // Фиолетовый цвет
     marginTop: 5,
+  },
+  voiceButtonContainer: {
+    alignItems: 'center',
+    marginTop: 20,
+    
+  },
+  voiceButton: {
+    padding: 15,
+    borderRadius: 5,
+    alignItems: 'center',
+  },
+  listening: {
+    backgroundColor: '#d32f2f', // Красный цвет для записи
+  },
+  notListening: {
+    backgroundColor: '#4caf50', // Зеленый цвет для ожидания
+  },
+  voiceButtonText: {
+    color: '#fff',
+    fontSize: 16,
   },
 });
 

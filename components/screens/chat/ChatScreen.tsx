@@ -29,7 +29,7 @@ interface Message {
 const initialMessages: Message[] = [
     {
         id: "1",
-        text: "Добрый день, как вам удобно...",
+        text: "Добрый день!",
         user: {
             name: "Вы",
             avatar: avatar1,
@@ -38,7 +38,7 @@ const initialMessages: Message[] = [
     },
     {
         id: "2",
-        text: "В каком формате вы хотите получить ответ?",
+        text: "Добавьте в чат документ или текст для его проверки на непротиворечивость!",
         user: {
             name: "Работодатель",
             avatar: avatar2,
@@ -46,7 +46,7 @@ const initialMessages: Message[] = [
     },
     {
         id: "3",
-        text: "Добрый день! Получили ваш запрос.",
+        text: "Добрый день!",
         user: {
             name: "Работодатель",
             avatar: avatar2,

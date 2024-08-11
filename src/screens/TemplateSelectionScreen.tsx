@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
-import { Button } from 'react-native-paper';
+import { Button, IconButton } from 'react-native-paper';
 import { createDocument } from '../api/documents';
 
 const templates = [
@@ -21,6 +21,13 @@ const TemplateSelectionScreen = ({ navigation }: TemplateSelectionScreenProps) =
 
   return (
     <View style={styles.container}>
+      <IconButton
+        icon="arrow-left"
+        color="purple"
+        size={24}
+        onPress={() => navigation.navigate('HomeScreen')}
+        style={styles.backButton}
+      />
       {templates.map((template) => (
         <Button
           key={template.type}
@@ -40,6 +47,11 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 16,
     justifyContent: 'center',
+  },
+  backButton: {
+    position: 'absolute',
+    bottom: 16,
+    left: 16,
   },
   button: {
     marginBottom: 16,

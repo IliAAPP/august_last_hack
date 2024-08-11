@@ -92,7 +92,7 @@ const styles = StyleSheet.create({
   },
   segmentedControl: {
     flexDirection: 'row',
-    backgroundColor: '#e0f7ff',
+    backgroundColor: '#8e24aa', // Фиолетовый цвет
     borderRadius: 20,
     overflow: 'hidden',
     marginTop: 10,
@@ -106,11 +106,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   activeTab: {
-    backgroundColor: '#59A9CC',
+    backgroundColor: '#6a1b9a', // Фиолетовый цвет
     borderRadius: 20,
   },
   tabText: {
-    color: '#59A9CC',
+    color: '#6a1b9a', // Фиолетовый цвет
     fontWeight: 'bold',
     fontSize: 12,
   },

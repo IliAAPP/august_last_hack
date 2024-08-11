@@ -16,7 +16,7 @@ import DocumentEditScreen from "../src/screens/DocumentEditScreen";
 import DocumentListScreen from "../src/screens/DocumentListScreen";
 import HomeScreen from "../src/screens/HomeScreen";
 import TemplateSelectionScreen from "../src/screens/TemplateSelectionScreen";
-import CheckVideo from "../components/CheckVideo/CheckVideo";
+
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -39,6 +39,8 @@ const HomeTabs = () => {
             iconName = 'comments';
           } else if (route.name === 'Profile') {
             iconName = 'user';
+          } else if (route.name === 'CheckVideo') {
+            iconName = 'camera';
           } 
 
           return <Icon name={iconName} size={size} color={color} />;
@@ -79,6 +81,7 @@ const Navigation = () => {
             <Stack.Screen name="DocumentListScreen" component={DocumentListScreen} /> 
             <Stack.Screen name="DocumentViewScreen" component={DocumentViewScreen} /> 
             <Stack.Screen name="TemplateSelectionScreen" component={TemplateSelectionScreen} /> 
+            <Stack.Screen name="HomeScreen" component={HomeScreen} /> 
             
           </>
         ) : (

@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { View, FlatList, StyleSheet } from 'react-native';
-import { List, FAB } from 'react-native-paper';
+import { List, FAB, IconButton } from 'react-native-paper';
 import { useAtom } from 'jotai';
 import { documentsAtom } from '../atoms/documentsAtom';
 import { fetchDocuments } from '../api/documents';
@@ -36,6 +36,7 @@ const DocumentListScreen = ({ navigation }: DocumentListScreenProps) => {
   return (
     <View style={styles.container}>
       <FlatList
+        contentContainerStyle={styles.listContent}
         data={documents}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
@@ -45,6 +46,13 @@ const DocumentListScreen = ({ navigation }: DocumentListScreenProps) => {
             onPress={() => navigation.navigate('DocumentEditScreen', { documentId: item.id })}
           />
         )}
+      />
+      <IconButton
+        icon="arrow-left"
+        color="purple"
+        size={24}
+        onPress={() => navigation.navigate('HomeScreen')}
+        style={styles.backButton}
       />
       <FAB
         style={styles.fab}
@@ -58,6 +66,14 @@ const DocumentListScreen = ({ navigation }: DocumentListScreenProps) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  listContent: {
+    paddingTop: 40,
+  },
+  backButton: {
+    position: 'absolute',
+    bottom: 16,
+    left: 16,
   },
   fab: {
     position: 'absolute',
